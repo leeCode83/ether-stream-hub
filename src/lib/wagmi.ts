@@ -2,7 +2,7 @@ import { createConfig, http } from 'wagmi'
 import { baseSepolia } from 'wagmi/chains'
 import { coinbaseWallet, injected, walletConnect } from 'wagmi/connectors'
 
-const projectId = 'your-project-id-here' // Replace with actual WalletConnect project ID
+const projectId = '1ad9069f974ea9e100f4ea05f3542c96' // Replace with actual WalletConnect project ID
 
 export const config = createConfig({
   chains: [baseSepolia],
