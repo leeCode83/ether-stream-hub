@@ -36,158 +36,18 @@ export default function CreatorDashboard() {
   });
 
   // Contract write functions
-  const { writeContract: createVideo, isPending: isCreatingVideo, data: createVideoHash } = useWriteContract({
-    mutation: {
-      onSuccess: () => {
-        toast({
-          title: "Video Created!",
-          description: "Your video contract has been deployed successfully.",
-        });
-        setVideoURI('');
-        setViewingFee('');
-      },
-      onError: (error) => {
-        toast({
-          title: "Creation Failed",
-          description: error.message,
-          variant: "destructive",
-        });
-      },
-    },
-  });
-
-  const { writeContract: approveToken, isPending: isApproving } = useWriteContract({
-    mutation: {
-      onError: (error) => {
-        toast({
-          title: "Approval Failed",
-          description: error.message,
-          variant: "destructive",
-        });
-      },
-    },
-  });
-
-  const { writeContract: depositTokens, isPending: isDepositing } = useWriteContract({
-    mutation: {
-      onSuccess: () => {
-        toast({
-          title: "Deposit Successful!",
-          description: "WUSDT tokens have been deposited to your account.",
-        });
-        setDepositAmount('');
-        refetchDeposits();
-      },
-      onError: (error) => {
-        toast({
-          title: "Deposit Failed",
-          description: error.message,
-          variant: "destructive",
-        });
-      },
-    },
-  });
-
-  const { writeContract: withdrawTokens, isPending: isWithdrawing } = useWriteContract({
-    mutation: {
-      onSuccess: () => {
-        toast({
-          title: "Withdrawal Successful!",
-          description: "WUSDT tokens have been withdrawn to your wallet.",
-        });
-        setWithdrawAmount('');
-        refetchDeposits();
-      },
-      onError: (error) => {
-        toast({
-          title: "Withdrawal Failed",
-          description: error.message,
-          variant: "destructive",
-        });
-      },
-    },
-  });
-
-  // Wait for transaction confirmations
-  const { isLoading: isCreateVideoConfirming } = useWaitForTransactionReceipt({ hash: createVideoHash });
+  const { writeContract: createVideo, isPending: isCreatingVideo } = useWriteContract();
+  const { writeContract: approveToken, isPending: isApproving } = useWriteContract();
+  const { writeContract: depositTokens, isPending: isDepositing } = useWriteContract();
+  const { writeContract: withdrawTokens, isPending: isWithdrawing } = useWriteContract();
 
   const handleCreateVideo = () => {
-    if (!videoURI || !viewingFee) {
-      toast({
-        title: "Missing Information",
-        description: "Please fill in all required fields.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      const feeInWei = parseEther(viewingFee);
-    writeContract({
+    createVideo({
       address: CONTRACT_ADDRESSES.FACTORY,
       abi: VideoPlatformFactoryABI,
       functionName: 'createVideoContract',
-      args: [feeInWei, videoURI],
+      args: [parseEther(viewingFee), videoURI],
     });
-    } catch (error) {
-      toast({
-        title: "Invalid Fee",
-        description: "Please enter a valid viewing fee.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleDeposit = async () => {
-    if (!depositAmount) return;
-
-    try {
-      const amountInWei = parseEther(depositAmount);
-      
-      approveToken({
-        address: CONTRACT_ADDRESSES.WUSDT,
-        abi: WUSDTABI,
-        functionName: 'approve',
-        args: [CONTRACT_ADDRESSES.PAYMENT, amountInWei],
-      });
-
-      // Note: In a production app, you'd want to wait for approval confirmation
-      // before calling deposit. For this demo, we'll assume quick confirmation.
-      setTimeout(() => {
-        depositTokens({
-          address: CONTRACT_ADDRESSES.PAYMENT,
-          abi: VideoPlatformPaymentABI,
-          functionName: 'deposit',
-          args: [amountInWei],
-        });
-      }, 2000);
-    } catch (error) {
-      toast({
-        title: "Invalid Amount",
-        description: "Please enter a valid deposit amount.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleWithdraw = () => {
-    if (!withdrawAmount) return;
-
-    try {
-      const amountInWei = parseEther(withdrawAmount);
-      withdrawTokens({
-        address: CONTRACT_ADDRESSES.PAYMENT,
-        abi: VideoPlatformPaymentABI,
-        functionName: 'withdraw',
-        args: [amountInWei],
-      });
-    } catch (error) {
-      toast({
-        title: "Invalid Amount",
-        description: "Please enter a valid withdrawal amount.",
-        variant: "destructive",
-      });
-    }
   };
 
   if (!isConnected) {
@@ -219,28 +79,16 @@ export default function CreatorDashboard() {
         </div>
 
         <Tabs defaultValue="upload" className="space-y-6">
-          <TabsList className="glass-card border-glass-border">
-            <TabsTrigger value="upload" className="flex items-center gap-2">
-              <Upload className="h-4 w-4" />
-              Upload Video
-            </TabsTrigger>
-            <TabsTrigger value="earnings" className="flex items-center gap-2">
-              <DollarSign className="h-4 w-4" />
-              Earnings
-            </TabsTrigger>
-            <TabsTrigger value="wallet" className="flex items-center gap-2">
-              <Wallet className="h-4 w-4" />
-              Wallet
-            </TabsTrigger>
+          <TabsList className="clean-card">
+            <TabsTrigger value="upload">Upload Video</TabsTrigger>
+            <TabsTrigger value="earnings">Earnings</TabsTrigger>
+            <TabsTrigger value="wallet">Wallet</TabsTrigger>
           </TabsList>
 
           <TabsContent value="upload">
-            <Card className="glass-card border-glass-border">
+            <Card className="clean-card hover-lift">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Plus className="h-5 w-5" />
-                  Create New Video
-                </CardTitle>
+                <CardTitle>Create New Video</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
@@ -267,28 +115,18 @@ export default function CreatorDashboard() {
 
                 <Button 
                   onClick={handleCreateVideo}
-                  disabled={isCreatingVideo || isCreateVideoConfirming}
+                  disabled={isCreatingVideo}
                   variant="hero"
                   className="w-full"
                 >
-                  {isCreatingVideo || isCreateVideoConfirming ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2" />
-                      Creating...
-                    </>
-                  ) : (
-                    <>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Create Video Contract
-                    </>
-                  )}
+                  {isCreatingVideo ? 'Creating...' : 'Create Video Contract'}
                 </Button>
               </CardContent>
             </Card>
           </TabsContent>
 
           <TabsContent value="earnings">
-            <Card className="glass-card border-glass-border">
+            <Card className="clean-card hover-lift">
               <CardHeader>
                 <CardTitle>Your Earnings</CardTitle>
               </CardHeader>
@@ -303,115 +141,32 @@ export default function CreatorDashboard() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="wallet" className="space-y-6">
-            {/* Balance Overview */}
-            <div className="grid md:grid-cols-2 gap-6">
-              <Card className="glass-card border-glass-border">
-                <CardHeader>
-                  <CardTitle className="text-lg">Wallet Balance</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {wusdtBalance ? formatEther(wusdtBalance.value) : '0'} WUSDT
-                  </div>
-                  <p className="text-sm text-muted-foreground">Available in wallet</p>
-                </CardContent>
-              </Card>
+          <TabsContent value="wallet">
+            <div className="space-y-6">
+              <div className="grid md:grid-cols-2 gap-6">
+                <Card className="clean-card hover-lift">
+                  <CardHeader>
+                    <CardTitle>Wallet Balance</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {wusdtBalance ? formatEther(wusdtBalance.value) : '0'} WUSDT
+                    </div>
+                  </CardContent>
+                </Card>
 
-              <Card className="glass-card border-glass-border">
-                <CardHeader>
-                  <CardTitle className="text-lg">Platform Balance</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {depositsBalance ? formatEther(depositsBalance) : '0'} WUSDT
-                  </div>
-                  <p className="text-sm text-muted-foreground">Deposited on platform</p>
-                </CardContent>
-              </Card>
+                <Card className="clean-card hover-lift">
+                  <CardHeader>
+                    <CardTitle>Platform Balance</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {depositsBalance ? formatEther(depositsBalance) : '0'} WUSDT
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
-
-            {/* Deposit Section */}
-            <Card className="glass-card border-glass-border">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-success">
-                  <ArrowDownLeft className="h-5 w-5" />
-                  Deposit WUSDT
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="depositAmount">Amount</Label>
-                  <Input
-                    id="depositAmount"
-                    type="number"
-                    step="0.01"
-                    placeholder="0.00"
-                    value={depositAmount}
-                    onChange={(e) => setDepositAmount(e.target.value)}
-                  />
-                </div>
-                <Button 
-                  onClick={handleDeposit}
-                  disabled={isApproving || isDepositing}
-                  variant="premium"
-                  className="w-full"
-                >
-                  {isApproving || isDepositing ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2" />
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <ArrowDownLeft className="h-4 w-4 mr-2" />
-                      Deposit
-                    </>
-                  )}
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Withdraw Section */}
-            <Card className="glass-card border-glass-border">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-warning">
-                  <ArrowUpRight className="h-5 w-5" />
-                  Withdraw WUSDT
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="withdrawAmount">Amount</Label>
-                  <Input
-                    id="withdrawAmount"
-                    type="number"
-                    step="0.01"
-                    placeholder="0.00"
-                    value={withdrawAmount}
-                    onChange={(e) => setWithdrawAmount(e.target.value)}
-                  />
-                </div>
-                <Button 
-                  onClick={handleWithdraw}
-                  disabled={isWithdrawing}
-                  variant="outline"
-                  className="w-full"
-                >
-                  {isWithdrawing ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2" />
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <ArrowUpRight className="h-4 w-4 mr-2" />
-                      Withdraw
-                    </>
-                  )}
-                </Button>
-              </CardContent>
-            </Card>
           </TabsContent>
         </Tabs>
       </div>
